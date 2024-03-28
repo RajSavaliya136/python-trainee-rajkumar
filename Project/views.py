@@ -1,108 +1,127 @@
 
-from .models import Disease,Doctor,Patient
-from .serializer import DiseaseSerializer,DoctorSerializer,PatientSerializer
+from .serializer import DoctorAdditionalSerializer,PatientAdditionalSerializer,DiseaseSerializer,DoctorCRUDSerializer,PatientCRUDSerializer
+from .models import Disease,Additional_info
 
-from django.contrib.auth.models import User
+from Authentication.models import DoctorRegistration,PatientRegistration
+from Authentication.serializer import DoctorRegistrationSerializer,PatientRegistrationSerializer
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+# Project Views
 
-class CreateGetAllDeleteAllDoctor(APIView):
+class AdditionalInfoDoctor(APIView):
     def post(self,request,format=None):
         try:
-            serializer = DoctorSerializer(data=request.data)
+            serializer = DoctorAdditionalSerializer(data=request.data)
             if serializer.is_valid():
-                try :
-                    mymobile = request.POST['mobile']
-                    myemail = request.POST['email']
-                    patient = True if Patient.objects.filter(mobile=mymobile) or Patient.objects.get(email=myemail) else False
-                    if patient:
-                        return Response({'message':'There is a patient with same mobile/email.'})
-                    else:
-                        pass
-                except:
-                    User.objects.create_user(username=request.POST['firstname']+request.POST['mobile'],first_name=request.POST['firstname'],last_name=request.POST['lastname'],is_staff=1,email=request.POST['email'])
-                    serializer.save()
-                    return Response(serializer.data,status=status.HTTP_201_CREATED)
-            return Response({'message':'Something went wrong , Invalid Field. or other .'},status=status.HTTP_400_BAD_REQUEST)
+                serializer.save()
+                return Response(serializer.data,status=status.HTTP_201_CREATED)
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
         
     def get(self,request,format=None):
         try:
-            quiry = Doctor.objects.all()
-            serializer = DoctorSerializer(quiry,many=True)
-            return Response(serializer.data)
+            quiry = Additional_info.objects.filter(patient_registration_id__isnull=True)
+            serializer = DoctorAdditionalSerializer(quiry,many=True)
+            return Response(serializer.data,status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
     
     def delete(self,request,format=None):
         try:
-            quiry = Doctor.objects.all()
-            User.objects.all().delete()
+            quiry = Additional_info.objects.filter(patient_registration_id__isnull=True)
             quiry.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response({'status':True,'message':'Doctor Additional info deleted'},status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
-
-class RetriveUpdateDeleteDoctor(APIView):
-    
+        
+class RetriveDeleteUpdateOneDoctorAdditional(APIView):
     def get(self,request,pk,format=None):
         try:
-            quiry = Doctor.objects.get(pk=pk)
-            serializer = DoctorSerializer(quiry)
-            return Response(serializer.data)
+            quiry = Additional_info.objects.get(doctor_registration_id=pk)
+            serializer = DoctorAdditionalSerializer(quiry)
+            return Response(serializer.data,status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
         
     def put(self,request,pk,format=None):
         try:
-            quiry = Doctor.objects.get(pk=pk)
-            serializer = DoctorSerializer(quiry,data=request.data)
+            quiry = Additional_info.objects.get(doctor_registration_id=pk)
+            serializer = DoctorAdditionalSerializer(quiry,data=request.data)
             if serializer.is_valid():
-                # print(request.POST['email']) #new
-                # print(quiry.email) #old
-                try :
-                    mymobile = request.POST['mobile']
-                    myemail = request.POST['email']
-                    patient = True if Patient.objects.filter(mobile=mymobile) or Patient.objects.get(email=myemail) else False
-                    if patient:
-                        return Response({'message':'There is a patient with same mobile/email.'})
-                    else:
-                        pass
-                except:
-                    user = User.objects.filter(email=quiry.email)
-                    user.update(username=request.POST['firstname']+request.POST['mobile'],email=request.POST['email'],first_name=request.POST['firstname'],last_name=request.POST['lastname'])
-                    serializer.save()
-                    return Response(serializer.data)
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+                serializer.save()
+                return Response(serializer.data,status=status.HTTP_200_OK)
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
-    
+        
     def delete(self,request,pk,format=None):
         try:
-            quiry = Doctor.objects.get(pk=pk)
-            patients = True if Patient.objects.filter(registered_by_id=quiry.pk) else False
-            if patients:    
-                p = Patient.objects.filter(registered_by_id=quiry.pk)
-                plist = list(p)
-                
-                for p in range(0,len(plist)):
-                    pmails = plist[p].email
-                    user = User.objects.filter(email=pmails).delete()
-                
-            user = User.objects.filter(email=quiry.email)
-            
-            user.delete()
+            quiry = Additional_info.objects.get(doctor_registration_id=pk)
             quiry.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response({'status':False,'message':'Doctor additional info deleted'},status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
 
-class CreateGetAllDeleteAllDisease(APIView):
+class AdditionalInfoPatient(APIView):
+    def post(self,request,format=None):
+        try:
+            serializer = PatientAdditionalSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data,status=status.HTTP_201_CREATED)
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
+        
+    def get(self,request,format=None):
+        try:
+            quiry = Additional_info.objects.filter(doctor_registration_id__isnull=True)
+            serializer = PatientAdditionalSerializer(quiry,many=True)
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
     
+    def delete(self,request,format=None):
+        try:
+            quiry = Additional_info.objects.filter(doctor_registration_id__isnull=True)
+            quiry.delete()
+            return Response({'status':True,'message':'Patient additional info deleted'},status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
+
+class RetriveDeleteUpdateOnePatientAdditional(APIView):
+    def get(self,request,pk,format=None):
+        try:
+            quiry = Additional_info.objects.get(patient_registration_id=pk)
+            serializer = PatientAdditionalSerializer(quiry)
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
+        
+    def put(self,request,pk,format=None):
+        try:
+            quiry = Additional_info.objects.get(patient_registration_id=pk)
+            serializer = PatientAdditionalSerializer(quiry,data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data,status=status.HTTP_200_OK)
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
+        
+    def delete(self,request,pk,format=None):
+        try:
+            quiry = Additional_info.objects.get(patient_registration_id=pk)
+            quiry.delete()
+            return Response({'status':False,'message':'Pateint Additional info deleted'},status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
+     
+class CreateGetAllDeleteAllDisease(APIView):
     def post(self,request,format=None):
         try:
             serializer = DiseaseSerializer(data=request.data)
@@ -117,7 +136,7 @@ class CreateGetAllDeleteAllDisease(APIView):
         try:
             quiry = Disease.objects.all()
             serializer = DiseaseSerializer(quiry,many=True)
-            return Response(serializer.data)
+            return Response(serializer.data,status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
         
@@ -125,127 +144,150 @@ class CreateGetAllDeleteAllDisease(APIView):
         try:
             quiry = Disease.objects.all()
             quiry.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-                return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
-
-class RetriveUpdateDeleteDisease(APIView):
-    
-    def get(self,request,pk,format=None):
-        try:
-            quiry = Disease.objects.get(pk=pk)
-            serializer = DiseaseSerializer(quiry)
-            return Response(serializer.data)
+            return Response({'status':False,'message':'All Disease Deleted'},status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
-    
+        
+class RetriveDeleteUpdateOneDisease(APIView):
+    def get(self,request,pk,format=None):
+        try:
+            quiry = Disease.objects.get(id=pk)
+            serializer = DiseaseSerializer(quiry)
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
+        
     def put(self,request,pk,format=None):
         try:
-            quiry = Disease.objects.get(pk=pk)
+            quiry = Disease.objects.get(id=pk)
             serializer = DiseaseSerializer(quiry,data=request.data)
             if serializer.is_valid():
                 serializer.save()
-                return Response(serializer.data)
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
-    
-    def delete(self,request,pk,format=None):
-        try:
-            quiry = Disease.objects.get(pk=pk)
-            quiry.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
-        
-class CreateGetAllDeleteAllPatient(APIView):
-    
-    def post(self,request,format=None):
-        try:
-            serializer = PatientSerializer(data=request.data)
-            if serializer.is_valid():
-                try :
-                    mymobile = request.POST['mobile']
-                    myemail = request.POST['email']
-                    doctor = True if Doctor.objects.filter(mobile=mymobile) or Doctor.objects.get(email=myemail) else False
-                    if doctor:
-                        return Response({'message':'There is a doctor with same mobile/email.'})
-                    else:
-                        pass
-                except:
-                    User.objects.create_user(username=request.POST['firstname']+request.POST['mobile'],first_name=request.POST['firstname'],last_name=request.POST['lastname'],is_staff=0,email=request.POST['email'])
-                    serializer.save()
-                    return Response(serializer.data,status=status.HTTP_201_CREATED)
-                
+                return Response(serializer.data,status=status.HTTP_200_OK)
             return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
-  
-    def get(self,request,format=None):
+        
+    def delete(self,request,pk,format=None):
         try:
-            quiry = Patient.objects.all()
-            serializer = PatientSerializer(quiry,many=True)
-            return Response(serializer.data)
+            quiry = Disease.objects.get(id=pk)
+            quiry.delete()
+            return Response({'status':False,'message':'One Disease deleted'},status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
         
+# Authentication Views
+
+class DoctorGetAllDeleteAll(APIView):
+    def get(self,request,format=None):
+        try:
+            quiry = DoctorRegistration.objects.all()
+            serializer = DoctorCRUDSerializer(quiry,many=True)
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
+    
     def delete(self,request,format=None):
         try:
-            quiry = Patient.objects.all()
-            User.objects.filter(is_staff=0).delete()
+            quiry = DoctorRegistration.objects.all()
+            try:
+                additional = Additional_info.objects.filter(patient_registration_id__isnull=True)
+                patient = PatientRegistration.objects.all()
+                patient.delete()
+                additional.delete()
+            except:
+                pass
             quiry.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-                return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)     
-
-class RetriveUpdateDeletePatient(APIView):
-    
-    def get(self,request,pk,format=None):
-        try:
-            quiry = Patient.objects.get(pk=pk)
-            serializer = PatientSerializer(quiry)
-            return Response(serializer.data)
+            return Response({'status':True,'message':'Doctor deleted'},status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
-    
+
+class RetriveDeleteUpdateOneDoctor(APIView):
+    def get(self,request,pk,format=None):
+        try:
+            quiry = DoctorRegistration.objects.get(id=pk)
+            serializer = DoctorCRUDSerializer(quiry)
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
+        
     def put(self,request,pk,format=None):
         try:
-            quiry = Patient.objects.get(pk=pk)
-            serializer = PatientSerializer(quiry,data=request.data)
+            quiry = DoctorRegistration.objects.get(id=pk)
+            serializer = DoctorCRUDSerializer(quiry,data=request.data)
             if serializer.is_valid():
-                try :
-                    mymobile = request.POST['mobile']
-                    myemail = request.POST['email']
-                    doctor = True if Doctor.objects.filter(mobile=mymobile) or Doctor.objects.get(email=myemail) else False
-                    if doctor:
-                        return Response({'message':'There is a doctor with same mobile/email.'})
-                    else:
-                        pass
-                except:
-                    user = User.objects.filter(email=quiry.email)
-                    user.update(username=request.POST['firstname']+request.POST['mobile'],email=request.POST['email'],first_name=request.POST['firstname'],last_name=request.POST['lastname'])
-                    serializer.save()
-                    return Response(serializer.data)
-            return Response({'message':'Possiiibiliities that mobiile/email you entered is used by other . Because something went wrong'},status=status.HTTP_400_BAD_REQUEST)
+                serializer.save()
+                return Response(serializer.data,status=status.HTTP_200_OK)
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
+        
+    def delete(self,request,pk,format=None):
+        try:
+            quiry = DoctorRegistration.objects.get(id=pk)
+            try:
+                additional = Additional_info.objects.get(doctor_registration_id=pk)
+                patient = PatientRegistration.objects.filter(regestered_by=pk)
+                patient.delete()
+                additional.delete()
+            except:
+                pass
+            quiry.delete()
+            return Response({'status':False,'message':'Doctor deleted'},status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
+        
+class PatientGetAllDeleteAll(APIView):
+    def get(self,request,format=None):
+        try:
+            quiry = PatientRegistration.objects.all()
+            serializer = PatientCRUDSerializer(quiry,many=True)
+            return Response(serializer.data,status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
     
-    def delete(self,request,pk,format=None):
+    def delete(self,request,format=None):
         try:
-            quiry = Patient.objects.get(pk=pk)
-            user = User.objects.filter(email=quiry.email)
-            user.delete()
+            quiry = PatientRegistration.objects.all()
+            try:
+                additional = Additional_info.objects.filter(doctor_registration_id__isnull=True)
+                additional.delete()
+            except:
+                pass
             quiry.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response({'status':True,'message':'Patient deleted'},status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
-
-class DoctorsPatient(APIView):
+        
+class RetriveDeleteUpdateOnePatient(APIView):
     def get(self,request,pk,format=None):
         try:
-            quiry = Patient.objects.filter(registered_by=pk)
-            serializer = PatientSerializer(quiry,many=True)
-            return Response(serializer.data)
+            quiry = PatientRegistration.objects.get(id=pk)
+            serializer = PatientCRUDSerializer(quiry)
+            return Response(serializer.data,status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
-
+        
+    def put(self,request,pk,format=None):
+        try:
+            quiry = PatientRegistration.objects.get(id=pk)
+            serializer = PatientCRUDSerializer(quiry,data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data,status=status.HTTP_200_OK)
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
+        
+    def delete(self,request,pk,format=None):
+        try:
+            quiry = PatientRegistration.objects.get(id=pk)
+            try:
+                additional = Additional_info.objects.get(patient_registration_id=pk)
+                additional.delete()
+            except:
+                pass
+            quiry.delete()
+            return Response({'status':False,'message':'Patient deleted'},status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)

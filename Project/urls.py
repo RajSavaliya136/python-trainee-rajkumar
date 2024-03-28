@@ -1,15 +1,22 @@
 
-from django.contrib import admin
 from django.urls import path
 
-from . import views
+from .views import *
 
 urlpatterns = [
-    path('doctor/',views.CreateGetAllDeleteAllDoctor.as_view(),name='doctor'),
-    path('doctor/update/<int:pk>/',views.RetriveUpdateDeleteDoctor.as_view(),name='doctor_update'),
-    path('doctor/patient/<int:pk>/',views.DoctorsPatient.as_view(),name='doctor_patient'),
-    path('disease/',views.CreateGetAllDeleteAllDisease.as_view(),name='disease'),
-    path('disease/update/<int:pk>/',views.RetriveUpdateDeleteDisease.as_view(),name='disease_update'),
-    path('patient/',views.CreateGetAllDeleteAllPatient.as_view(),name='patient'),
-    path('patient/update/<int:pk>/',views.RetriveUpdateDeletePatient.as_view(),name='patient_update'),
+    path('doctor/additional/',AdditionalInfoDoctor.as_view(),name='doctor_additional'),
+    path('doctor/additional/update/<int:pk>/',RetriveDeleteUpdateOneDoctorAdditional.as_view(),name='doctor_additional_update'),
+   
+    path('doctor/',DoctorGetAllDeleteAll.as_view(),name='doctor'),
+    path('doctor/update/<int:pk>/',RetriveDeleteUpdateOneDoctor.as_view(),name='doctor_update'),
+    
+    path('disease/',CreateGetAllDeleteAllDisease.as_view(),name='disease'),
+    path('disease/update/<int:pk>/',RetriveDeleteUpdateOneDisease.as_view(),name='disease_update'),
+    
+    path('patient/additional/',AdditionalInfoPatient.as_view(),name='patient_additional'),
+    path('patient/additional/update/<int:pk>/',RetriveDeleteUpdateOnePatientAdditional.as_view(),name='patient_additional_update'),
+    
+    path('patient/',PatientGetAllDeleteAll.as_view(),name='patient'),
+    path('patient/update/<int:pk>/',RetriveDeleteUpdateOnePatient.as_view(),name='patient_update'),
+    
 ]

@@ -1,66 +1,121 @@
-
-from Project.models import Doctor,Patient
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-
-from django.contrib.auth.models import User
-from django.contrib.auth import login,logout
+from django.contrib.auth import login,authenticate
 from django.http import HttpResponse
 
-class DoctorAuthentication(APIView):
+from rest_framework import status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+from .models import DoctorRegistration,PatientRegistration
+from .serializer import DoctorRegistrationSerializer,PatientRegistrationSerializer
+
+class DoctorRegistrationView(APIView):
+    def post(self,request):
+        try:
+            serializer = DoctorRegistrationSerializer(data=request.data)
+            sent_otp = '1234'
+            received_otp = request.POST['otp']
+            mobile = request.POST['mobile']
+            match = True if sent_otp==received_otp else False
+            try:
+                PatientRegistration.objects.get(mobile=mobile)
+                return Response({'status':False,'message':'Patient with this mobile number is already exists !'},status=status.HTTP_400_BAD_REQUEST)
+            except:
+                if match:
+                    if serializer.is_valid():
+                        instence = serializer.save()
+                        instence.is_active = True # Make user  logged in with sign up 
+                        instence.save()
+                        return Response(serializer.data,status=status.HTTP_201_CREATED)
+                    return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+                return Response({'status':False,'message':'Please Enter valid otp !'},status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
+ 
+class DoctorLoginView(APIView):
     def post(self,request):
         try:
             mobile = request.POST['mobile']
-            dquiry = True if Doctor.objects.filter(mobile=mobile) else False
-            otp = '1234'
-            if dquiry:
-                received_otp = request.POST['otp']
-                if otp == received_otp:
-                    get_obj = Doctor.objects.get(mobile=mobile)
-                    try:   
-                        user = User.objects.get(email=get_obj.email)
-                        login(request,user)       
-                    except Exception as e :
-                        return Response({'message':f'Cant find this user from User named : {get_obj.firstname}{get_obj.lastname}'})
-                    return Response({'message':'Welcome prime user'})
-                return Response({'message':'This account is already exists Please enter valid otp!'})
-            else:
-                received_mobile = request.POST['mobile']
-                received_otp = request.POST['otp']
-                if otp == received_otp:
-                    create_obj = Doctor.objects.create(mobile=received_mobile,firstname=request.POST['firstname'],lastname=request.POST['lastname'],email=request.POST['email'])
-                    user = User.objects.create_user(first_name=request.POST['firstname'],last_name=request.POST['lastname'],is_staff = 1,username=request.POST['firstname']+request.POST['lastname']+request.POST['mobile'],email=request.POST['email'])
-                    login(request,user)
-                    return Response({'message':'Welcome new user'})
-                return Response({'message':'This account is new Please enter valid otp!'})
-        except Exception as e :
+            received_otp = request.POST['otp']
+            sent_otp = '1234'
+            match = True if sent_otp==received_otp else False
+            try:
+                doctor = DoctorRegistration.objects.get(mobile=mobile)
+                if doctor.is_active == 0:
+                    if match:
+                        doctor.is_active = 1 # Make user logged in
+                        doctor.save()
+                        return Response({'status':True,'message':'Login succeed ! '},status=status.HTTP_202_ACCEPTED)
+                    return Response({'status':False,'message':'Invalid otp'},status=status.HTTP_400_BAD_REQUEST)
+                return Response({'status':False,'message':'This account is already activeted'},status=status.HTTP_400_BAD_REQUEST)
+            except:
+                return Response({'status':False,'message':'No account exists with this number'},status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
+         
+class DoctorLogoutView(APIView):
+    def post(self,request,pk):
+        try:
+            user = DoctorRegistration.objects.get(id=pk)
+            if user.is_active == 1:
+                user.is_active = 0 # Make user logged out
+                user.save()
+                return Response({'status':True,'message':'Logout succeed ! '},status=status.HTTP_202_ACCEPTED)
+            return Response({'status':False,'message':'This account is not active'},status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'status':False,'message':'No account with this id'},status=status.HTTP_400_BAD_REQUEST)
 
-class PatientAuthentication(APIView):
+class PatientRegistrationView(APIView):
+    def post(self,request):
+        try:
+            serializer = PatientRegistrationSerializer(data=request.data)
+            sent_otp = '1234'
+            received_otp = request.POST['otp']
+            mobile = request.POST['mobile']
+            match = True if sent_otp==received_otp else False
+            try:
+                DoctorRegistration.objects.get(mobile=mobile)
+                return Response({'status':False,'message':'Doctor with this mobile number is already exists !'},status=status.HTTP_400_BAD_REQUEST)
+            except:
+                if match:
+                    if serializer.is_valid():
+                        instence = serializer.save()
+                        instence.is_active = True # Make user  logged in with sign up 
+                        instence.save()
+                        return Response(serializer.data,status=status.HTTP_201_CREATED)
+                    return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+                return Response({'status':False,'message':'Please Enter valid otp !'},status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
+        
+class PatientLoginView(APIView):
     def post(self,request):
         try:
             mobile = request.POST['mobile']
-            pquiry = True if Patient.objects.filter(mobile=mobile) else False
-            otp = '1234'
-            if pquiry:
-                received_otp = request.POST['otp']
-                if otp == received_otp:
-                    get_obj = Patient.objects.get(mobile=mobile)
-                    try:   
-                        user = User.objects.get(email=get_obj.email)
-                        login(request,user)
-                    except Exception as e :
-                        return Response({'message':f'Cant find this user from User named : {get_obj.firstname}{get_obj.lastname}'})
-                    return Response({'message':'Welcome prime user'})
-                return Response({'message':'This account is already exists Please enter valid otp!'})
-            else:
-                return Response({'message':'Not able to log in. no account with this number !'})        
-        except Exception as e :
+            received_otp = request.POST['otp']
+            sent_otp = '1234'
+            match = True if sent_otp==received_otp else False
+            try:
+                patient = PatientRegistration.objects.get(mobile=mobile)
+                if patient.is_active == 0:
+                    if match:
+                        patient.is_active = 1 # Make user logged in
+                        patient.save()
+                        return Response({'status':True,'message':'Login succeed ! '},status=status.HTTP_202_ACCEPTED)
+                    return Response({'status':False,'message':'Invalid otp'},status=status.HTTP_400_BAD_REQUEST)
+                return Response({'status':False,'message':'This account is already activeted'},status=status.HTTP_400_BAD_REQUEST)
+            except:
+                return Response({'status':False,'message':'No account exists with this number'},status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
-
-# class Logout(APIView):
-#     def get(self, request, format=None):
-#         request.user.auth_token.delete()
-#         return Response(status=status.HTTP_200_OK)
+        
+class PatientLogoutView(APIView):
+    def post(self,request,pk):
+        try:
+            user = PatientRegistration.objects.get(id=pk)
+            if user.is_active == 1:
+                user.is_active = 0 # Make user logged out
+                user.save()
+                return Response({'status':True,'message':'Logout succeed ! '},status=status.HTTP_202_ACCEPTED)
+            return Response({'status':False,'message':'This account is not active'},status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'status':False,'message':'No account with this id'},status=status.HTTP_400_BAD_REQUEST)

@@ -1,8 +1,13 @@
+from .models import DoctorRegistration,PatientRegistration 
+
 from rest_framework import serializers
 
-from Project.models import Doctor
-
-class UserAuthentication(serializers.ModelSerializer):
+class DoctorRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Doctor
-        fields = ['mobile']
+        model = DoctorRegistration
+        fields = '__all__'
+        
+class PatientRegistrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PatientRegistration
+        fields = '__all__'

@@ -1,18 +1,30 @@
+from .models  import Additional_info,Disease
+
+from Authentication.models import DoctorRegistration,PatientRegistration
+
 from rest_framework import serializers
 
-from .models import Disease,Doctor,Patient
-
-class DoctorSerializer(serializers.ModelSerializer):
+class DoctorAdditionalSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Doctor
-        fields = '__all__'
+        model = Additional_info
+        fields = ('doctor_registration','email','address','age','bank_name','account_type','account_no')
+        
+class PatientAdditionalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Additional_info
+        fields = ('patient_registration','email','address','age','bank_name','account_type','account_no')
         
 class DiseaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Disease
         fields = '__all__'
-        
-class PatientSerializer(serializers.ModelSerializer):
+
+class DoctorCRUDSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Patient
-        fields = '__all__'
+        model = DoctorRegistration
+        fields = ('first_name','last_name','mobile','photo','degree','role','adhar_no')
+        
+class PatientCRUDSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PatientRegistration
+        fields = ('regestered_by','first_name','last_name','mobile','photo','disease','suggetion','next_appointment')
