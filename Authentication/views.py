@@ -11,9 +11,20 @@ class DoctorGenerateOTPView(APIView):
         try:
             serializer = OTPGenerationDoctorSerializer(data=request.data)
             if serializer.is_valid():
+                otp = 1234
                 mobile = serializer.validated_data.get('mobile')
-                serializer.save()
-                return Response({"message": "OTP sent successfully."},status=status.HTTP_201_CREATED)
+                try:
+                    get_user = DoctorRegistration.objects.get(mobile=mobile)
+                    get_user.otp = otp
+                    get_user.save()
+                    return Response({'status':True,'message':'User Logged In OTP Sent'},status=status.HTTP_200_OK)
+                except DoctorRegistration.DoesNotExist:
+                    create = DoctorRegistration.objects.create(
+                        mobile = mobile,
+                        otp=otp
+                    )
+                    serializer.save()
+                    return Response({"message": "OTP sent successfully."},status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'status':False,'message':f'Error - {e}'},status=status.HTTP_400_BAD_REQUEST)
@@ -46,7 +57,7 @@ class DoctorLoginGenerateOTPView(APIView):
         try:
             mobile = request.POST['mobile']
             try:
-                doctor = DoctorRegistration.objects.get(mobile=mobile)
+                # doctor = DoctorRegistration.objects.get(mobile=mobile)
                 serializer = OTPGenerationDoctorLoginSerializer(data=request.data)
                 if serializer.is_valid():
                     mobile = serializer.validated_data.get('mobile')
