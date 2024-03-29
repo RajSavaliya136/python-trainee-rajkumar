@@ -3,7 +3,6 @@ from .serializer import DoctorAdditionalSerializer,PatientAdditionalSerializer,D
 from .models import Disease,Additional_info
 
 from Authentication.models import DoctorRegistration,PatientRegistration
-from Authentication.serializer import DoctorRegistrationSerializer,PatientRegistrationSerializer
 
 from rest_framework import status
 from rest_framework.response import Response
