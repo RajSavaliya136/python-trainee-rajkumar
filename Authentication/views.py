@@ -68,11 +68,10 @@ class PatientRegisterLoginView(APIView):
                 return Response({'status': True, 'message': 'Welcome Back user . '}, status=status.HTTP_200_OK)
             except:
                 try:
-                    regestered_by_id = DoctorRegistration.objects.get(id=regestered_by)
                     PatientRegistration.objects.create(
                         mobile=mobile,
                         otp = generated_otp,
-                        regestered_by = regestered_by_id
+                        regestered_by_id = regestered_by
                     )
                     return Response({'status': True, 'message': 'Welcome New user . '}, status=status.HTTP_201_CREATED)
                 except:
